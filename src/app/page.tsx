@@ -14,9 +14,7 @@ import {
   X,
   Loader2,
   CheckCircle2,
-  AlertCircle,
-  Eye, 
-  ArrowLeft 
+  AlertCircle
 } from 'lucide-react';
 
 /**
@@ -27,7 +25,6 @@ import {
 
 type UserRole = 'admin' | 'user';
 type AuthPageState = 'login' | 'register';
-type AppView = 'dashboard' | 'departments' | 'students' | 'teachers' | 'teacherDetails'; 
 
 interface User {
   id: string;
@@ -64,6 +61,7 @@ interface Teacher {
 /**
  * ==========================================
  * MOCK API SERVICE (In-Memory Database)
+ * Implements the CRUD routes for all entities.
  * ==========================================
  */
 
@@ -90,7 +88,6 @@ const mockDb = {
   teachers: [
     { id: 'teacher-CS-001', firstName: 'Dr. Emily', lastName: 'Brown', email: 'emily@school.edu', departmentId: 'dept-1', specialization: 'AI' },
     { id: 'teacher-MATH-001', firstName: 'Prof. Alan', lastName: 'Davis', email: 'alan@school.edu', departmentId: 'dept-2', specialization: 'Calculus' },
-    { id: 'teacher-PHY-001', firstName: 'Dr. John', lastName: 'Doe', email: 'john@school.edu', departmentId: 'dept-3', specialization: 'Quantum Mechanics' },
   ] as Teacher[],
   // Mock user storage for registration and login
   users: [
@@ -131,12 +128,6 @@ const api = {
   departments: {
     // GET /api/departments
     getAll: async () => { await delay(300); return [...mockDb.departments]; },
-    getById: async (id: string) => { 
-        await delay(300);
-        const dept = mockDb.departments.find(d => d.id === id);
-        if (!dept) throw new Error('Department not found');
-        return dept;
-    },
     // POST /api/departments
     create: async (data: Omit<Department, 'id'>) => {
       await delay(300);
@@ -179,7 +170,7 @@ const api = {
     create: async (data: Omit<Student, 'id'>) => {
       await delay(300);
       // Logic for new ID generation could be added here, e.g., 'student-new-001'
-      const newStudent = { ...data, id: generateId(), enrollmentDate: new Date().toISOString().split('T')[0] }; 
+      const newStudent = { ...data, id: generateId() }; 
       mockDb.students.push(newStudent);
       return newStudent;
     },
@@ -204,15 +195,6 @@ const api = {
       return deptId 
         ? mockDb.teachers.filter(t => t.departmentId === deptId)
         : [...mockDb.teachers]; 
-    },
-    // GET /api/teachers/:id
-    getById: async (id: string): Promise<Teacher> => {
-      await delay(300);
-      const teacher = mockDb.teachers.find(t => t.id === id);
-      if (!teacher) {
-        throw new Error(`Teacher with ID ${id} not found`);
-      }
-      return teacher;
     },
     create: async (data: Omit<Teacher, 'id'>) => {
       await delay(300);
@@ -241,7 +223,7 @@ const api = {
  * ==========================================
  */
 
-const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link', size?: 'default' | 'sm' | 'icon' | 'lg' }>(
+const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link', size?: 'default' | 'sm' | 'icon' }>(
   ({ className = '', variant = 'default', size = 'default', ...props }, ref) => {
     const baseStyles = "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
     
@@ -257,7 +239,6 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
     const sizes = {
       default: "h-10 px-4 py-2",
       sm: "h-9 rounded-md px-3",
-      lg: "h-11 rounded-md px-8",
       icon: "h-10 w-10",
     };
 
@@ -350,52 +331,7 @@ const Dialog = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose
 };
 
 // Toast Notification context
-interface ToastMessage {
-    id: number;
-    message: string;
-    type: 'success' | 'error';
-}
-
 const ToastContext = createContext<{ showToast: (msg: string, type: 'success' | 'error') => void }>({ showToast: () => {} });
-
-const ToastProvider = ({ children }: { children: React.ReactNode }) => {
-    const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-    const showToast = (message: string, type: 'success' | 'error') => {
-        const id = Date.now();
-        const newToast: ToastMessage = { id, message, type };
-        setToasts(prev => [...prev, newToast]);
-
-        setTimeout(() => {
-            setToasts(prev => prev.filter(t => t.id !== id));
-        }, 5000); // 5 seconds duration
-    };
-
-    const Toast = ({ message, type, id }: ToastMessage) => (
-        <div className={`p-4 rounded-md shadow-lg mb-2 flex items-center justify-between text-sm transition-all duration-300 transform translate-x-0 opacity-100 ${
-            type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-        }`}>
-            <div className="flex items-center">
-                {type === 'success' ? <CheckCircle2 className="h-5 w-5 mr-2" /> : <AlertCircle className="h-5 w-5 mr-2" />}
-                <span>{message}</span>
-            </div>
-            <button onClick={() => setToasts(prev => prev.filter(t => t.id !== id))} className="ml-4 text-white/80 hover:text-white">
-                <X className="h-4 w-4" />
-            </button>
-        </div>
-    );
-
-    return (
-        <ToastContext.Provider value={{ showToast }}>
-            {children}
-            <div className="fixed top-4 right-4 z-50 w-full max-w-xs">
-                {toasts.map(toast => (
-                    <Toast key={toast.id} {...toast} />
-                ))}
-            </div>
-        </ToastContext.Provider>
-    );
-};
 
 /**
  * ==========================================
@@ -420,54 +356,6 @@ const AuthContext = createContext<{
   setAuthPage: () => {},
   authPage: 'login',
 });
-
-const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [authPage, setAuthPage] = useState<AuthPageState>('login');
-
-    const login = async (email: string, password: string) => {
-        setIsLoading(true);
-        try {
-            const loggedInUser = await api.auth.login(email, password);
-            setUser(loggedInUser);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const register = async (name: string, email: string, password: string) => {
-        setIsLoading(true);
-        try {
-            const registeredUser = await api.auth.register(name, email, password);
-            setUser(registeredUser);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const logout = () => {
-        setUser(null);
-        setAuthPage('login');
-    };
-
-    const value = useMemo(() => ({
-        user,
-        login,
-        register,
-        logout,
-        isLoading,
-        authPage,
-        setAuthPage
-    }), [user, isLoading, authPage]);
-
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
-
 
 const RegisterPage = () => {
   const { register, isLoading, setAuthPage } = useContext(AuthContext);
@@ -592,10 +480,10 @@ const LoginPage = () => {
  * ==========================================
  */
 
-const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentView: AppView, setView: (v: AppView) => void, isMobileOpen: boolean, closeMobile: () => void }) => {
+const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentView: string, setView: (v: string) => void, isMobileOpen: boolean, closeMobile: () => void }) => {
   const { logout, user } = useContext(AuthContext);
 
-  const menuItems: { id: AppView, label: string, icon: React.ElementType }[] = [
+  const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'departments', label: 'Departments', icon: Building2 },
     { id: 'students', label: 'Students', icon: GraduationCap },
@@ -603,13 +491,13 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
   ];
 
   const baseClasses = "fixed inset-y-0 left-0 z-40 w-64 transform bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0";
-  // Use 'isMobileOpen' prop for correct mobile state.
+  // FIX: Use isMobileOpen prop instead of undefined variable isMobileMenuOpen
   const mobileClasses = isMobileOpen ? "translate-x-0" : "-translate-x-full"; 
 
   return (
     <div className={`${baseClasses} ${mobileClasses} flex flex-col`}>
       <div className="flex h-16 items-center px-6 font-bold text-lg tracking-wider border-b border-slate-800">
-        PORTAL
+        EDUSPACE
       </div>
       <div className="flex-1 py-6 space-y-1">
         {menuItems.map((item) => (
@@ -617,7 +505,7 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
             key={item.id}
             onClick={() => { setView(item.id); closeMobile(); }}
             className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors ${
-              currentView.startsWith(item.id) ? 'bg-slate-800 text-white border-r-4 border-indigo-500' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              currentView === item.id ? 'bg-slate-800 text-white border-r-4 border-indigo-500' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             }`}
           >
             <item.icon className="mr-3 h-5 w-5" />
@@ -645,7 +533,7 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
 };
 
 // Modified DashboardHome to accept setView prop
-const DashboardHome = ({ setView }: { setView: (view: AppView) => void }) => {
+const DashboardHome = ({ setView }: { setView: (view: string) => void }) => {
   const [stats, setStats] = useState({ depts: 0, students: 0, teachers: 0 });
 
   useEffect(() => {
@@ -733,14 +621,12 @@ const DataTable = ({
   data, 
   columns, 
   onEdit, 
-  onDelete,
-  onView 
+  onDelete 
 }: { 
   data: any[], 
   columns: { key: string, label: string }[], 
   onEdit: (item: any) => void, 
-  onDelete: (item: any) => void,
-  onView?: (item: any) => void 
+  onDelete: (item: any) => void 
 }) => {
   if (data.length === 0) {
     return (
@@ -771,22 +657,16 @@ const DataTable = ({
               <tr key={row.id || i} className="hover:bg-slate-50/50 transition-colors">
                 {columns.map(col => (
                   <td key={`${row.id}-${col.key}`} className="px-4 py-3">
-                    {/* Handle nested object access for columns like 'department.name' */}
                     {col.key.includes('.') 
-                      ? col.key.split('.').reduce((o: any, i: string) => o?.[i], row) 
+                      ? col.key.split('.').reduce((o: any, i: string) => o[i], row) 
                       : row[col.key]}
                   </td>
                 ))}
-                <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                  {onView && (
-                    <Button variant="ghost" size="icon" onClick={() => onView(row)} title="View Details">
-                      <Eye className="h-4 w-4 text-blue-500" />
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(row)} title="Edit">
+                <td className="px-4 py-3 text-right space-x-2">
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(row)}>
                     <Pencil className="h-4 w-4 text-slate-500" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(row)} title="Delete">
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(row)}>
                     <Trash2 className="h-4 w-4 text-red-500" />
                   </Button>
                 </td>
@@ -809,7 +689,6 @@ const DepartmentView = () => {
   const { showToast } = useContext(ToastContext);
   const [data, setData] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterQuery, setFilterQuery] = useState(''); // State for filtering by ID/Code
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Department | null>(null);
 
@@ -819,21 +698,8 @@ const DepartmentView = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const allDepts = await api.departments.getAll();
-      
-      let filteredDepts = allDepts;
-      const query = filterQuery.trim().toLowerCase();
-
-      // Filter by ID, Code, or Name if query is present
-      if (query) {
-        filteredDepts = allDepts.filter(d => 
-          d.id.toLowerCase().includes(query) || 
-          d.code.toLowerCase().includes(query) ||
-          d.name.toLowerCase().includes(query)
-        );
-      }
-
-      setData(filteredDepts);
+      const res = await api.departments.getAll();
+      setData(res);
     } catch (e) {
       showToast('Failed to load departments.', 'error');
     } finally {
@@ -841,8 +707,7 @@ const DepartmentView = () => {
     }
   };
 
-  // Trigger reload when filterQuery changes
-  useEffect(() => { loadData(); }, [filterQuery]);
+  useEffect(() => { loadData(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -859,8 +724,7 @@ const DepartmentView = () => {
       loadData(); // Reload data after successful operation
     } catch (error) {
       showToast('Operation failed', 'error');
-    } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -878,6 +742,7 @@ const DepartmentView = () => {
 
   const handleDelete = async (item: Department) => {
     // IMPORTANT: Custom modal should be used instead of window.confirm in real apps
+    // For this single-file example, we are leaving window.confirm as is.
     if (window.confirm(`Are you sure you want to delete department: ${item.name}? This action cannot be undone.`)) { 
       setLoading(true);
       try {
@@ -886,7 +751,6 @@ const DepartmentView = () => {
         loadData();
       } catch (e) {
         showToast('Deletion failed', 'error');
-      } finally {
         setLoading(false);
       }
     }
@@ -899,23 +763,12 @@ const DepartmentView = () => {
         <Button onClick={openCreate} disabled={loading}><Plus className="mr-2 h-4 w-4" /> Add Department</Button>
       </div>
 
-      {/* Department Filter Input */}
-      <div className="flex justify-start">
-         <Input
-            placeholder="Search by ID, Name, or Code"
-            value={filterQuery}
-            onChange={e => setFilterQuery(e.target.value)}
-            className="max-w-md"
-          />
-      </div>
-
       {loading ? (
         <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
       ) : (
         <DataTable 
           data={data}
           columns={[
-            { key: 'id', label: 'ID' },
             { key: 'name', label: 'Name' },
             { key: 'code', label: 'Code' },
             { key: 'description', label: 'Description' }
@@ -957,624 +810,338 @@ const DepartmentView = () => {
 };
 
 
-/**
- * ==========================================
- * VIEW: Student Manager
- * ==========================================
- */
+// Student/Teacher Manager
+const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
+  const { showToast } = useContext(ToastContext);
+  const [data, setData] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterDept, setFilterDept] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
 
-interface StudentData extends Student {
-    departmentName: string;
-}
+  // Form State
+  const initialForm = { firstName: '', lastName: '', email: '', departmentId: '', extra: '' };
+  const [formData, setFormData] = useState(initialForm);
 
-const StudentView = () => {
-    const { showToast } = useContext(ToastContext);
-    const [data, setData] = useState<StudentData[]>([]);
-    const [departments, setDepartments] = useState<Department[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [filterQuery, setFilterQuery] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<Student | null>(null);
+  // The 'apiRef' is determined based on the 'type' prop
+  const apiRef = type === 'student' ? api.students : api.teachers;
 
-    const [formData, setFormData] = useState<Omit<Student, 'id' | 'enrollmentDate'>>({ 
-        firstName: '', 
-        lastName: '', 
-        email: '', 
-        departmentId: '' 
-    });
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // @ts-ignore - The getAll method is guaranteed to exist on both student and teacher APIs
+      const [people, depts] = await Promise.all([
+        apiRef.getAll(filterDept || undefined),
+        api.departments.getAll()
+      ]);
+      
+      // Map department name to person for display
+      const mapped = people.map(p => ({
+        ...p,
+        departmentName: depts.find(d => d.id === p.departmentId)?.name || 'Unknown'
+      }));
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const [allStudents, allDepts] = await Promise.all([
-                api.students.getAll(),
-                api.departments.getAll()
-            ]);
-            setDepartments(allDepts);
-
-            const deptMap = new Map(allDepts.map(d => [d.id, d.name]));
-            
-            let processedStudents: StudentData[] = allStudents.map(s => ({
-                ...s,
-                departmentName: deptMap.get(s.departmentId) || 'N/A'
-            }));
-
-            const query = filterQuery.trim().toLowerCase();
-            if (query) {
-                processedStudents = processedStudents.filter(s => 
-                    // ADDED ID SEARCH HERE
-                    s.id.toLowerCase().includes(query) || 
-                    s.firstName.toLowerCase().includes(query) || 
-                    s.lastName.toLowerCase().includes(query) ||
-                    s.email.toLowerCase().includes(query) ||
-                    s.departmentName.toLowerCase().includes(query)
-                );
-            }
-
-            setData(processedStudents);
-        } catch (e) {
-            showToast('Failed to load student data.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { loadData(); }, [filterQuery]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            if (editingItem) {
-                await api.students.update(editingItem.id, formData);
-                showToast('Student updated successfully', 'success');
-            } else {
-                await api.students.create(formData as Omit<Student, 'id'>);
-                showToast('Student created successfully', 'success');
-            }
-            setIsModalOpen(false);
-            loadData();
-        } catch (error) {
-            showToast('Operation failed', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const openCreate = () => {
-        setEditingItem(null);
-        setFormData({ firstName: '', lastName: '', email: '', departmentId: departments[0]?.id || '' });
-        setIsModalOpen(true);
-    };
-
-    const openEdit = (item: Student) => {
-        setEditingItem(item);
-        setFormData({ 
-            firstName: item.firstName, 
-            lastName: item.lastName, 
-            email: item.email, 
-            departmentId: item.departmentId 
-        });
-        setIsModalOpen(true);
-    };
-
-    const handleDelete = async (item: Student) => {
-        if (window.confirm(`Are you sure you want to delete student: ${item.firstName} ${item.lastName}?`)) { 
-            setLoading(true);
-            try {
-                await api.students.delete(item.id);
-                showToast('Student deleted successfully', 'success');
-                loadData();
-            } catch (e) {
-                showToast('Deletion failed', 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">Students</h2>
-                <Button onClick={openCreate} disabled={loading}><Plus className="mr-2 h-4 w-4" /> Add Student</Button>
-            </div>
-
-            <div className="flex justify-start">
-                 <Input
-                    placeholder="Search by ID, Name, Email, or Department"
-                    value={filterQuery}
-                    onChange={e => setFilterQuery(e.target.value)}
-                    className="max-w-md"
-                  />
-            </div>
-
-            {loading ? (
-                <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
-            ) : (
-                <DataTable 
-                    data={data}
-                    columns={[
-                        { key: 'id', label: 'ID' },
-                        { key: 'firstName', label: 'First Name' },
-                        { key: 'lastName', label: 'Last Name' },
-                        { key: 'email', label: 'Email' },
-                        { key: 'departmentName', label: 'Department' },
-                        { key: 'enrollmentDate', label: 'Enrolled Date' },
-                    ]}
-                    onEdit={openEdit}
-                    onDelete={handleDelete}
-                />
-            )}
-
-            {/* Student Create/Edit Modal */}
-            <Dialog 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
-                title={editingItem ? `Edit Student: ${editingItem.firstName} ${editingItem.lastName}` : 'Enroll New Student'}
-            >
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>First Name</Label>
-                            <Input value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Last Name</Label>
-                            <Input value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Department</Label>
-                        <Select 
-                            value={formData.departmentId} 
-                            onChange={e => setFormData({...formData, departmentId: e.target.value})} 
-                            required
-                        >
-                            {departments.map(dept => (
-                                <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
-                            ))}
-                        </Select>
-                    </div>
-                    <div className="flex justify-end pt-4">
-                        <Button type="submit" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {editingItem ? 'Update Student' : 'Enroll Student'}
-                        </Button>
-                    </div>
-                </form>
-            </Dialog>
-        </div>
-    );
-};
-
-/**
- * ==========================================
- * VIEW: Teacher Details (for the Teacher Manager)
- * ==========================================
- */
-
-const TeacherDetails = ({ teacherId, setView, setTeacherId }: { teacherId: string, setView: (v: AppView, id?: string) => void, setTeacherId: (id: string | undefined) => void }) => {
-    const { showToast } = useContext(ToastContext);
-    const [teacher, setTeacher] = useState<Teacher | null>(null);
-    const [department, setDepartment] = useState<Department | null>(null);
-    const [students, setStudents] = useState<Student[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const loadDetails = async () => {
-            setLoading(true);
-            try {
-                const t = await api.teachers.getById(teacherId);
-                setTeacher(t);
-
-                const d = await api.departments.getById(t.departmentId);
-                setDepartment(d);
-
-                // Mock fetching students in the teacher's department (simplified for mock DB)
-                const s = await api.students.getAll(t.departmentId);
-                setStudents(s);
-
-            } catch (e) {
-                showToast('Failed to load teacher details.', 'error');
-                setView('teachers'); // Redirect back if fetch fails
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadDetails();
-    }, [teacherId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleBack = () => {
-        setTeacherId(undefined);
-        setView('teachers');
-    };
-
-    if (loading) {
-        return <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>;
+      setData(mapped);
+      setDepartments(depts);
+    } catch (e) {
+      showToast(`Failed to load ${type} data.`, 'error');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!teacher) return <div className="text-center p-8 text-slate-500">Teacher not found.</div>;
+  useEffect(() => { loadData(); }, [filterDept, type]);
 
-    return (
-        <div className="space-y-6">
-            <Button variant="ghost" className="text-lg font-semibold -ml-4" onClick={handleBack}>
-                <ArrowLeft className="mr-2 h-5 w-5" />
-                Back to Teachers
-            </Button>
-            <Card className="p-8">
-                <div className="flex items-center space-x-6">
-                    <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold">
-                        {teacher.firstName.charAt(0)}{teacher.lastName.charAt(0)}
-                    </div>
-                    <div>
-                        <h2 className="text-3xl font-bold tracking-tight">{teacher.firstName} {teacher.lastName}</h2>
-                        <p className="text-slate-500">{teacher.email}</p>
-                    </div>
-                </div>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-                <div className="grid md:grid-cols-2 gap-6 mt-6 border-t pt-6">
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium text-slate-500">Department</p>
-                        <p className="text-lg font-semibold text-slate-900">{department?.name} ({department?.code})</p>
-                    </div>
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium text-slate-500">Specialization</p>
-                        <p className="text-lg font-semibold text-slate-900">{teacher.specialization}</p>
-                    </div>
-                </div>
-            </Card>
+    const payload: any = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      departmentId: formData.departmentId,
+    };
+    
+    // Specific fields
+    if (type === 'student') payload.enrollmentDate = formData.extra;
+    else payload.specialization = formData.extra;
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Students in {department?.name} ({students.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {students.length > 0 ? (
-                        <DataTable 
-                            data={students}
-                            columns={[
-                                { key: 'id', label: 'ID' },
-                                { key: 'firstName', label: 'First Name' },
-                                { key: 'lastName', label: 'Last Name' },
-                                { key: 'email', label: 'Email' },
-                                { key: 'enrollmentDate', label: 'Enrolled Date' },
-                            ]}
-                            onEdit={() => showToast("Editing student not available from this view.", "error")}
-                            onDelete={() => showToast("Deleting student not available from this view.", "error")}
-                        />
-                    ) : (
-                        <p className="text-slate-500">No students currently enrolled in this department.</p>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
-    );
-};
+    try {
+      if (editingItem) {
+        // @ts-ignore - The update method is guaranteed to exist
+        await apiRef.update(editingItem.id, payload);
+        showToast('Updated successfully', 'success');
+      } else {
+        // @ts-ignore - The create method is guaranteed to exist
+        await apiRef.create(payload);
+        showToast('Created successfully', 'success');
+      }
+      setIsModalOpen(false);
+      loadData();
+    } catch (error) {
+      showToast('Operation failed', 'error');
+      setLoading(false);
+    }
+  };
 
-/**
- * ==========================================
- * VIEW: Teacher Manager
- * ==========================================
- */
+  const openCreate = () => {
+    setEditingItem(null);
+    setFormData(initialForm);
+    setIsModalOpen(true);
+  };
 
-interface TeacherData extends Teacher {
-    departmentName: string;
-}
-
-const TeacherView = ({ setView, setTeacherId }: { setView: (v: AppView, id?: string) => void, setTeacherId: (id: string | undefined) => void }) => {
-    const { showToast } = useContext(ToastContext);
-    const [data, setData] = useState<TeacherData[]>([]);
-    const [departments, setDepartments] = useState<Department[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [filterQuery, setFilterQuery] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<Teacher | null>(null);
-
-    const [formData, setFormData] = useState<Omit<Teacher, 'id'>>({ 
-        firstName: '', 
-        lastName: '', 
-        email: '', 
-        departmentId: '', 
-        specialization: ''
+  const openEdit = (item: any) => {
+    setEditingItem(item);
+    setFormData({
+      firstName: item.firstName,
+      lastName: item.lastName,
+      email: item.email,
+      departmentId: item.departmentId,
+      extra: type === 'student' ? item.enrollmentDate : item.specialization
     });
+    setIsModalOpen(true);
+  };
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const [allTeachers, allDepts] = await Promise.all([
-                api.teachers.getAll(),
-                api.departments.getAll()
-            ]);
-            setDepartments(allDepts);
+  const handleDelete = async (item: any) => {
+    // IMPORTANT: Custom modal should be used instead of window.confirm in real apps
+    // For this single-file example, we are leaving window.confirm as is.
+    if (window.confirm(`Are you sure you want to delete ${item.firstName} ${item.lastName}?`)) { 
+      setLoading(true);
+      try {
+        // @ts-ignore - The delete method is guaranteed to exist
+        await apiRef.delete(item.id);
+        showToast('Deleted successfully', 'success');
+        loadData();
+      } catch (e) {
+        showToast('Deletion failed', 'error');
+        setLoading(false);
+      }
+    }
+  };
 
-            const deptMap = new Map(allDepts.map(d => [d.id, d.name]));
-            
-            let processedTeachers: TeacherData[] = allTeachers.map(t => ({
-                ...t,
-                departmentName: deptMap.get(t.departmentId) || 'N/A'
-            }));
+  // --- FIX: Ensure columns array is correctly typed using useMemo ---
+  const columns = useMemo(() => {
+    // Define the base columns with explicit type
+    const baseCols: { key: string, label: string }[] = [
+      { key: 'firstName', label: 'First Name' },
+      { key: 'lastName', label: 'Last Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'departmentName', label: 'Department' },
+    ];
 
-            const query = filterQuery.trim().toLowerCase();
-            if (query) {
-                processedTeachers = processedTeachers.filter(t => 
-                    // ADDED ID SEARCH HERE
-                    t.id.toLowerCase().includes(query) ||
-                    t.firstName.toLowerCase().includes(query) || 
-                    t.lastName.toLowerCase().includes(query) ||
-                    t.email.toLowerCase().includes(query) ||
-                    t.departmentName.toLowerCase().includes(query) ||
-                    t.specialization.toLowerCase().includes(query)
-                );
-            }
+    // Define the specific column based on type
+    const specificCol: { key: string, label: string } = type === 'student'
+      ? { key: 'enrollmentDate', label: 'Enrolled' }
+      : { key: 'specialization', label: 'Specialization' };
+      
+    // Define the ID column
+    const idColumn: { key: string, label: string } = { key: 'id', label: type === 'student' ? 'Student ID' : 'Teacher ID' };
 
-            setData(processedTeachers);
-        } catch (e) {
-            showToast('Failed to load teacher data.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Combine all columns in the desired order
+    return [idColumn, ...baseCols, specificCol];
+  }, [type]);
+  // -----------------------------------------------------------------
 
-    useEffect(() => { loadData(); }, [filterQuery]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            if (editingItem) {
-                await api.teachers.update(editingItem.id, formData);
-                showToast('Teacher updated successfully', 'success');
-            } else {
-                await api.teachers.create(formData);
-                showToast('Teacher created successfully', 'success');
-            }
-            setIsModalOpen(false);
-            loadData();
-        } catch (error) {
-            showToast('Operation failed', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const openCreate = () => {
-        setEditingItem(null);
-        setFormData({ 
-            firstName: '', 
-            lastName: '', 
-            email: '', 
-            departmentId: departments[0]?.id || '', 
-            specialization: '' 
-        });
-        setIsModalOpen(true);
-    };
-
-    const openEdit = (item: Teacher) => {
-        setEditingItem(item);
-        setFormData({ 
-            firstName: item.firstName, 
-            lastName: item.lastName, 
-            email: item.email, 
-            departmentId: item.departmentId, 
-            specialization: item.specialization 
-        });
-        setIsModalOpen(true);
-    };
-
-    const handleDelete = async (item: Teacher) => {
-        if (window.confirm(`Are you sure you want to delete teacher: ${item.firstName} ${item.lastName}?`)) { 
-            setLoading(true);
-            try {
-                await api.teachers.delete(item.id);
-                showToast('Teacher deleted successfully', 'success');
-                loadData();
-            } catch (e) {
-                showToast('Deletion failed', 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-    };
-
-    const handleView = (item: Teacher) => {
-        setTeacherId(item.id);
-        setView('teacherDetails', item.id);
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold tracking-tight">Teachers</h2>
-                <Button onClick={openCreate} disabled={loading}><Plus className="mr-2 h-4 w-4" /> Add Teacher</Button>
-            </div>
-
-            <div className="flex justify-start">
-                 <Input
-                    placeholder="Search by ID, Name, Email, or Specialization"
-                    value={filterQuery}
-                    onChange={e => setFilterQuery(e.target.value)}
-                    className="max-w-md"
-                  />
-            </div>
-
-            {loading ? (
-                <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
-            ) : (
-                <DataTable 
-                    data={data}
-                    columns={[
-                        { key: 'id', label: 'ID' },
-                        { key: 'firstName', label: 'First Name' },
-                        { key: 'lastName', label: 'Last Name' },
-                        { key: 'email', label: 'Email' },
-                        { key: 'specialization', label: 'Specialization' },
-                        { key: 'departmentName', label: 'Department' },
-                    ]}
-                    onEdit={openEdit}
-                    onDelete={handleDelete}
-                    onView={handleView}
-                />
-            )}
-
-            {/* Teacher Create/Edit Modal */}
-            <Dialog 
-                isOpen={isModalOpen} 
-                onClose={() => setIsModalOpen(false)} 
-                title={editingItem ? `Edit Teacher: ${editingItem.firstName} ${editingItem.lastName}` : 'Add New Teacher'}
-            >
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label>First Name</Label>
-                            <Input value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Last Name</Label>
-                            <Input value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Specialization</Label>
-                        <Input value={formData.specialization} onChange={e => setFormData({...formData, specialization: e.target.value})} required placeholder="e.g., Quantum Mechanics" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Department</Label>
-                        <Select 
-                            value={formData.departmentId} 
-                            onChange={e => setFormData({...formData, departmentId: e.target.value})} 
-                            required
-                        >
-                            {departments.map(dept => (
-                                <option key={dept.id} value={dept.id}>{dept.name} ({dept.code})</option>
-                            ))}
-                        </Select>
-                    </div>
-                    <div className="flex justify-end pt-4">
-                        <Button type="submit" disabled={loading}>
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {editingItem ? 'Update Teacher' : 'Add Teacher'}
-                        </Button>
-                    </div>
-                </form>
-            </Dialog>
-        </div>
-    );
-};
-
-/**
- * ==========================================
- * MAIN LAYOUT & APP CONTAINER
- * ==========================================
- */
-
-const MainLayout = ({ user }: { user: User }) => {
-    const [currentView, setCurrentView] = useState<AppView>('dashboard');
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [teacherIdForDetails, setTeacherIdForDetails] = useState<string | undefined>(undefined);
-
-    const setView = (view: AppView, id?: string) => {
-        setCurrentView(view);
-        if (view === 'teacherDetails' && id) {
-            setTeacherIdForDetails(id);
-        } else {
-            setTeacherIdForDetails(undefined);
-        }
-    };
-
-    const renderContent = () => {
-        switch (currentView) {
-            case 'dashboard':
-                return <DashboardHome setView={setView} />;
-            case 'departments':
-                return <DepartmentView />;
-            case 'students':
-                return <StudentView />;
-            case 'teachers':
-                return <TeacherView setView={setView} setTeacherId={setTeacherIdForDetails} />;
-            case 'teacherDetails':
-                // Check if teacherIdForDetails is defined before rendering the details view
-                return teacherIdForDetails 
-                    ? <TeacherDetails teacherId={teacherIdForDetails} setView={setView} setTeacherId={setTeacherIdForDetails} />
-                    : <TeacherView setView={setView} setTeacherId={setTeacherIdForDetails} />; // Fallback
-            default:
-                return <DashboardHome setView={setView} />;
-        }
-    };
-
-    return (
-        <div className="flex h-screen bg-slate-50">
-            <Sidebar 
-                currentView={currentView} 
-                setView={setView} 
-                isMobileOpen={isMobileMenuOpen} 
-                closeMobile={() => setIsMobileMenuOpen(false)}
-            />
-            
-            {/* Overlay for mobile menu */}
-            {isMobileMenuOpen && (
-                <div 
-                    className="fixed inset-0 z-30 bg-black/50 lg:hidden" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                ></div>
-            )}
-
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header/Top Bar */}
-                <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-white border-b shadow-sm">
-                    <button 
-                        className="lg:hidden p-2 rounded-md hover:bg-slate-100" 
-                        onClick={() => setIsMobileMenuOpen(true)}
-                        aria-label="Open menu"
-                    >
-                        <Menu className="h-6 w-6" />
-                    </button>
-                    <div className="flex-1 lg:pl-4 text-xl font-semibold hidden lg:block">
-                        {/* Dynamically show current section title */}
-                        {currentView.charAt(0).toUpperCase() + currentView.slice(1).replace(/([A-Z])/g, ' $1')}
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <div className="text-sm font-medium text-slate-700 hidden sm:block">
-                            Welcome, {user.name} ({user.role})
-                        </div>
-                    </div>
-                </header>
-
-                {/* Main Content Area */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-                    <div className="max-w-7xl mx-auto">
-                        {renderContent()}
-                    </div>
-                </main>
-            </div>
-        </div>
-    );
-};
-
-export default function App() {
   return (
-    <ToastProvider>
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
-    </ToastProvider>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold tracking-tight capitalize">{type}s</h2>
+        <div className="flex gap-2">
+          <Select 
+            value={filterDept} 
+            onChange={e => setFilterDept(e.target.value)} 
+            className="w-[200px]"
+          >
+            <option value="">All Departments</option>
+            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </Select>
+          <Button onClick={openCreate} disabled={loading}><Plus className="mr-2 h-4 w-4" /> Add {type === 'student' ? 'Student' : 'Teacher'}</Button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
+      ) : (
+        <DataTable data={data} columns={columns} onEdit={openEdit} onDelete={handleDelete} />
+      )}
+
+      <Dialog 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingItem ? `Edit ${type}` : `New ${type}`}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>First Name</Label>
+              <Input value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Last Name</Label>
+              <Input value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
+          </div>
+          <div className="space-y-2">
+            <Label>Department</Label>
+            <Select value={formData.departmentId} onChange={e => setFormData({...formData, departmentId: e.target.value})} required>
+              <option value="">Select Department</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{type === 'student' ? 'Enrollment Date' : 'Specialization'}</Label>
+            <Input 
+              type={type === 'student' ? 'date' : 'text'} 
+              value={formData.extra} 
+              onChange={e => setFormData({...formData, extra: e.target.value})} 
+              required 
+            />
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button type="submit" disabled={loading}>
+               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingItem ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </div>
   );
-}
-
-const AppContent = () => {
-    const { user, authPage } = useContext(AuthContext);
-
-    if (user) {
-        return <MainLayout user={user} />;
-    }
-
-    return authPage === 'login' ? <LoginPage /> : <RegisterPage />;
 };
+
+
+/**
+ * ==========================================
+ * MAIN APP COMPONENT
+ * ==========================================
+ */
+
+const App = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authPage, setAuthPage] = useState<AuthPageState>('login'); // State to switch between login/register
+
+  // --- Auth Logic ---
+  const authContextValue = useMemo(() => ({
+    user,
+    isLoading: authLoading,
+    authPage,
+    setAuthPage,
+    login: async (email: string, password: string) => {
+      setAuthLoading(true);
+      try {
+        const u = await api.auth.login(email, password);
+        setUser(u);
+      } finally {
+        setAuthLoading(false);
+      }
+    },
+    register: async (name: string, email: string, password: string) => {
+      setAuthLoading(true);
+      try {
+        const u = await api.auth.register(name, email, password);
+        setUser(u);
+      } finally {
+        setAuthLoading(false);
+      }
+    },
+    logout: () => {
+      setUser(null);
+      setCurrentView('dashboard');
+      setAuthPage('login'); // Reset to login page on logout
+    }
+  }), [user, authLoading, authPage]);
+
+  // --- Toast Logic ---
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const showToast = (msg: string, type: 'success' | 'error') => setToast({ msg, type });
+
+  // --- View Router ---
+  const renderView = () => {
+    switch (currentView) {
+      // Pass setCurrentView function to DashboardHome
+      case 'dashboard': return <DashboardHome setView={setCurrentView} />;
+      case 'departments': return <DepartmentView />;
+      case 'students': return <PersonManager type="student" />;
+      case 'teachers': return <PersonManager type="teacher" />;
+      default: return <DashboardHome setView={setCurrentView} />;
+    }
+  };
+
+  // --- Main Render ---
+  return (
+    <AuthContext.Provider value={authContextValue}>
+      <ToastContext.Provider value={{ showToast }}>
+        
+        {/* Toast Component */}
+        {toast && (
+          <div className={`fixed bottom-4 right-4 z-[100] rounded-md px-4 py-3 shadow-lg flex items-center gap-2 animate-in slide-in-from-right-full ${toast.type === 'error' ? 'bg-red-500 text-white' : 'bg-slate-900 text-white'}`}>
+             {toast.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+             <span className="text-sm font-medium">{toast.msg}</span>
+          </div>
+        )}
+
+        {!user ? (
+          authPage === 'login' ? <LoginPage /> : <RegisterPage />
+        ) : (
+          <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
+            {/* Mobile Overlay */}
+            {isMobileMenuOpen && (
+              <div 
+                className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+            )}
+
+            <Sidebar 
+              currentView={currentView} 
+              setView={setCurrentView} 
+              isMobileOpen={isMobileMenuOpen} 
+              closeMobile={() => setIsMobileMenuOpen(false)}
+            />
+
+            <div className="flex-1 flex flex-col min-w-0 transition-all">
+              <header className="sticky top-0 z-20 flex h-16 items-center border-b border-slate-200 bg-white/80 px-6 backdrop-blur">
+                <button 
+                  className="mr-4 lg:hidden"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                >
+                  <Menu className="h-6 w-6 text-slate-600" />
+                </button>
+                <div className="flex-1">
+                  <h1 className="text-lg font-semibold capitalize text-slate-800">
+                    {currentView.replace('-', ' ')}
+                  </h1>
+                </div>
+              </header>
+
+              <main className="flex-1 p-6 overflow-y-auto">
+                <div className="mx-auto max-w-6xl animate-in fade-in duration-500">
+                  {renderView()}
+                </div>
+              </main>
+            </div>
+          </div>
+        )}
+
+      </ToastContext.Provider>
+    </AuthContext.Provider>
+  );
+};
+
+export default App;
