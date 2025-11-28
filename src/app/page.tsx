@@ -8,7 +8,6 @@ import {
   LogOut, 
   Plus, 
   Search, 
-  MoreHorizontal, 
   Pencil, 
   Trash2, 
   Menu,
@@ -59,36 +58,36 @@ interface Teacher {
   specialization: string;
 }
 
-// Mock API Response wrapper
-interface ApiResponse<T> {
-  data: T;
-  success: boolean;
-  message?: string;
-}
-
 /**
  * ==========================================
- * MOCK API SERVICE
- * Simulates the backend described in the prompt
+ * MOCK API SERVICE (In-Memory Database)
+ * Implements the CRUD routes for all entities.
  * ==========================================
  */
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Helper function to generate unique IDs
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
 const mockDb = {
-  // Initial data for CRUD operations
+  // Initial Department Data
   departments: [
-    { id: '1', name: 'Computer Science', code: 'CS', description: 'Software and Hardware engineering' },
-    { id: '2', name: 'Mathematics', code: 'MATH', description: 'Pure and Applied Mathematics' },
-    { id: '3', name: 'Physics', code: 'PHY', description: 'Study of matter and energy' },
+    { id: 'dept-1', name: 'Computer Science', code: 'CS', description: 'Software and Hardware engineering' },
+    { id: 'dept-2', name: 'Mathematics', code: 'MATH', description: 'Pure and Applied Mathematics' },
+    { id: 'dept-3', name: 'Physics', code: 'PHY', description: 'Study of matter and energy' },
   ] as Department[],
+  // Initial Student Data: IDs updated to be more descriptive (e.g., student-CS-001)
   students: [
-    { id: '1', firstName: 'Alice', lastName: 'Smith', email: 'alice@school.edu', departmentId: '1', enrollmentDate: '2023-09-01' },
-    { id: '2', firstName: 'Bob', lastName: 'Johnson', email: 'bob@school.edu', departmentId: '2', enrollmentDate: '2023-09-01' },
+    { id: 'student-CS-001', firstName: 'Alice', lastName: 'Smith', email: 'alice@school.edu', departmentId: 'dept-1', enrollmentDate: '2023-09-01' },
+    { id: 'student-MATH-001', firstName: 'Bob', lastName: 'Johnson', email: 'bob@school.edu', departmentId: 'dept-2', enrollmentDate: '2023-09-01' },
+    { id: 'student-CS-002', firstName: 'Charlie', lastName: 'Brown', email: 'charlie@school.edu', departmentId: 'dept-1', enrollmentDate: '2023-09-15' },
+    { id: 'student-PHY-001', firstName: 'Diana', lastName: 'Prince', email: 'diana@school.edu', departmentId: 'dept-3', enrollmentDate: '2024-01-20' },
   ] as Student[],
+  // Initial Teacher Data
   teachers: [
-    { id: '1', firstName: 'Dr. Emily', lastName: 'Brown', email: 'emily@school.edu', departmentId: '1', specialization: 'AI' },
-    { id: '2', firstName: 'Prof. Alan', lastName: 'Davis', email: 'alan@school.edu', departmentId: '2', specialization: 'Calculus' },
+    { id: 'teacher-CS-001', firstName: 'Dr. Emily', lastName: 'Brown', email: 'emily@school.edu', departmentId: 'dept-1', specialization: 'AI' },
+    { id: 'teacher-MATH-001', firstName: 'Prof. Alan', lastName: 'Davis', email: 'alan@school.edu', departmentId: 'dept-2', specialization: 'Calculus' },
   ] as Teacher[],
   // Mock user storage for registration and login
   users: [
@@ -99,7 +98,7 @@ const mockDb = {
 const api = {
   auth: {
     login: async (email: string, password: string): Promise<User> => {
-      await delay(800);
+      await delay(500);
       const userRecord = mockDb.users.find(u => u.email === email && u.password === password);
       if (userRecord) {
         // Return user without password
@@ -109,12 +108,12 @@ const api = {
       throw new Error('Invalid credentials');
     },
     register: async (name: string, email: string, password: string): Promise<User> => {
-      await delay(800);
+      await delay(500);
       if (mockDb.users.some(u => u.email === email)) {
         throw new Error('User already exists');
       }
       const newUserRecord = { 
-        id: Math.random().toString(36).substr(2, 9), 
+        id: generateId(), 
         name, 
         email, 
         password, 
@@ -127,74 +126,91 @@ const api = {
     }
   },
   departments: {
-    getAll: async () => { await delay(500); return [...mockDb.departments]; },
+    // GET /api/departments
+    getAll: async () => { await delay(300); return [...mockDb.departments]; },
+    // POST /api/departments
     create: async (data: Omit<Department, 'id'>) => {
-      await delay(500);
-      const newDept = { ...data, id: Math.random().toString(36).substr(2, 9) };
+      await delay(300);
+      const newDept = { ...data, id: generateId() };
       mockDb.departments.push(newDept);
       return newDept;
     },
+    // PUT /api/departments/:id
     update: async (id: string, data: Partial<Department>) => {
-      await delay(500);
+      await delay(300);
       const idx = mockDb.departments.findIndex(d => d.id === id);
-      if (idx === -1) throw new Error('Not found');
+      if (idx === -1) throw new Error('Department not found');
       mockDb.departments[idx] = { ...mockDb.departments[idx], ...data };
       return mockDb.departments[idx];
     },
+    // DELETE /api/departments/:id
     delete: async (id: string) => {
-      await delay(500);
+      await delay(300);
       mockDb.departments = mockDb.departments.filter(d => d.id !== id);
       return true;
     }
   },
   students: {
     getAll: async (deptId?: string) => { 
-      await delay(500); 
+      await delay(300); 
       return deptId 
         ? mockDb.students.filter(s => s.departmentId === deptId)
         : [...mockDb.students]; 
     },
+    // GET /api/students/:id
+    getById: async (id: string): Promise<Student> => {
+      await delay(300);
+      const student = mockDb.students.find(s => s.id === id);
+      if (!student) {
+        throw new Error(`Student with ID ${id} not found`);
+      }
+      return student;
+    },
+    // POST /api/students
     create: async (data: Omit<Student, 'id'>) => {
-      await delay(500);
-      const newStudent = { ...data, id: Math.random().toString(36).substr(2, 9) };
+      await delay(300);
+      // Logic for new ID generation could be added here, e.g., 'student-new-001'
+      const newStudent = { ...data, id: generateId() }; 
       mockDb.students.push(newStudent);
       return newStudent;
     },
+    // PUT /api/students/:id
     update: async (id: string, data: Partial<Student>) => {
-      await delay(500);
+      await delay(300);
       const idx = mockDb.students.findIndex(s => s.id === id);
       if (idx === -1) throw new Error('Not found');
       mockDb.students[idx] = { ...mockDb.students[idx], ...data };
       return mockDb.students[idx];
     },
+    // DELETE /api/students/:id
     delete: async (id: string) => {
-      await delay(500);
+      await delay(300);
       mockDb.students = mockDb.students.filter(s => s.id !== id);
       return true;
     }
   },
   teachers: {
     getAll: async (deptId?: string) => { 
-      await delay(500); 
+      await delay(300); 
       return deptId 
         ? mockDb.teachers.filter(t => t.departmentId === deptId)
         : [...mockDb.teachers]; 
     },
     create: async (data: Omit<Teacher, 'id'>) => {
-      await delay(500);
-      const newTeacher = { ...data, id: Math.random().toString(36).substr(2, 9) };
+      await delay(300);
+      const newTeacher = { ...data, id: generateId() };
       mockDb.teachers.push(newTeacher);
       return newTeacher;
     },
     update: async (id: string, data: Partial<Teacher>) => {
-      await delay(500);
+      await delay(300);
       const idx = mockDb.teachers.findIndex(t => t.id === id);
       if (idx === -1) throw new Error('Not found');
       mockDb.teachers[idx] = { ...mockDb.teachers[idx], ...data };
       return mockDb.teachers[idx];
     },
     delete: async (id: string) => {
-      await delay(500);
+      await delay(300);
       mockDb.teachers = mockDb.teachers.filter(t => t.id !== id);
       return true;
     }
@@ -475,7 +491,8 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
   ];
 
   const baseClasses = "fixed inset-y-0 left-0 z-40 w-64 transform bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0";
-  const mobileClasses = isMobileOpen ? "translate-x-0" : "-translate-x-full";
+  // FIX: Use isMobileOpen prop instead of undefined variable isMobileMenuOpen
+  const mobileClasses = isMobileOpen ? "translate-x-0" : "-translate-x-full"; 
 
   return (
     <div className={`${baseClasses} ${mobileClasses} flex flex-col`}>
@@ -515,7 +532,8 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
   );
 };
 
-const DashboardHome = () => {
+// Modified DashboardHome to accept setView prop
+const DashboardHome = ({ setView }: { setView: (view: string) => void }) => {
   const [stats, setStats] = useState({ depts: 0, students: 0, teachers: 0 });
 
   useEffect(() => {
@@ -562,8 +580,8 @@ const DashboardHome = () => {
                     <CheckCircle2 className="h-4 w-4 text-slate-500" />
                   </div>
                   <div className="ml-4 space-y-1">
-                    <p className="text-sm font-medium leading-none">New Student Registration</p>
-                    <p className="text-sm text-slate-500">Student #{202300 + i} joined Computer Science</p>
+                    <p className="text-sm font-medium leading-none">Activity Update</p>
+                    <p className="text-sm text-slate-500">Department was updated successfully.</p>
                   </div>
                   <div className="ml-auto font-medium text-sm text-slate-500">Just now</div>
                 </div>
@@ -573,16 +591,17 @@ const DashboardHome = () => {
         </Card>
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle>Quick Links</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start">
+            {/* ADDED onClick handlers to navigate */}
+            <Button variant="outline" className="w-full justify-start" onClick={() => setView('students')}>
                <Plus className="mr-2 h-4 w-4" /> Add Student
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={() => setView('teachers')}>
                <Plus className="mr-2 h-4 w-4" /> Add Teacher
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            <Button variant="outline" className="w-full justify-start" onClick={() => setView('departments')}>
                <Building2 className="mr-2 h-4 w-4" /> Manage Departments
             </Button>
           </CardContent>
@@ -660,7 +679,12 @@ const DataTable = ({
   );
 };
 
-// Department Manager
+/**
+ * ==========================================
+ * VIEW: Department Manager
+ * Handles the Department CRUD operations.
+ * ==========================================
+ */
 const DepartmentView = () => {
   const { showToast } = useContext(ToastContext);
   const [data, setData] = useState<Department[]>([]);
@@ -673,27 +697,34 @@ const DepartmentView = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const res = await api.departments.getAll();
-    setData(res);
-    setLoading(false);
+    try {
+      const res = await api.departments.getAll();
+      setData(res);
+    } catch (e) {
+      showToast('Failed to load departments.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true); // Set loading while API call is in progress
     try {
       if (editingItem) {
         await api.departments.update(editingItem.id, formData);
-        showToast('Department updated', 'success');
+        showToast('Department updated successfully', 'success');
       } else {
         await api.departments.create(formData);
-        showToast('Department created', 'success');
+        showToast('Department created successfully', 'success');
       }
       setIsModalOpen(false);
-      loadData();
+      loadData(); // Reload data after successful operation
     } catch (error) {
       showToast('Operation failed', 'error');
+      setLoading(false);
     }
   };
 
@@ -710,11 +741,18 @@ const DepartmentView = () => {
   };
 
   const handleDelete = async (item: Department) => {
-    // Replaced confirm() with a custom modal logic (though here we use a simple window.confirm to avoid overly complex code in a single file)
-    if (window.confirm(`Are you sure you want to delete ${item.name}?`)) { 
-      await api.departments.delete(item.id);
-      showToast('Deleted successfully', 'success');
-      loadData();
+    // IMPORTANT: Custom modal should be used instead of window.confirm in real apps
+    // For this single-file example, we are leaving window.confirm as is.
+    if (window.confirm(`Are you sure you want to delete department: ${item.name}? This action cannot be undone.`)) { 
+      setLoading(true);
+      try {
+        await api.departments.delete(item.id);
+        showToast('Department deleted successfully', 'success');
+        loadData();
+      } catch (e) {
+        showToast('Deletion failed', 'error');
+        setLoading(false);
+      }
     }
   };
 
@@ -722,10 +760,12 @@ const DepartmentView = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Departments</h2>
-        <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" /> Add Department</Button>
+        <Button onClick={openCreate} disabled={loading}><Plus className="mr-2 h-4 w-4" /> Add Department</Button>
       </div>
 
-      {loading ? <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div> : 
+      {loading ? (
+        <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
+      ) : (
         <DataTable 
           data={data}
           columns={[
@@ -736,16 +776,21 @@ const DepartmentView = () => {
           onEdit={openEdit}
           onDelete={handleDelete}
         />
-      }
+      )}
 
-      <Dialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'Edit Department' : 'New Department'}>
+      {/* Department Create/Edit Modal */}
+      <Dialog 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingItem ? `Edit Department: ${editingItem.name}` : 'Create New Department'}
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Department Name</Label>
             <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
           </div>
           <div className="space-y-2">
-            <Label>Code</Label>
+            <Label>Code (e.g., CS, MATH)</Label>
             <Input value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} required />
           </div>
           <div className="space-y-2">
@@ -753,7 +798,10 @@ const DepartmentView = () => {
             <Input value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
           </div>
           <div className="flex justify-end pt-4">
-            <Button type="submit">{editingItem ? 'Update' : 'Create'}</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingItem ? 'Update Department' : 'Create Department'}
+            </Button>
           </div>
         </form>
       </Dialog>
@@ -761,7 +809,8 @@ const DepartmentView = () => {
   );
 };
 
-// Student Manager (Generic logic for Student/Teacher reused could be better, but separating for clarity)
+
+// Student/Teacher Manager
 const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
   const { showToast } = useContext(ToastContext);
   const [data, setData] = useState<any[]>([]);
@@ -775,30 +824,39 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
   const initialForm = { firstName: '', lastName: '', email: '', departmentId: '', extra: '' };
   const [formData, setFormData] = useState(initialForm);
 
+  // The 'apiRef' is determined based on the 'type' prop
   const apiRef = type === 'student' ? api.students : api.teachers;
 
   const loadData = async () => {
     setLoading(true);
-    const [people, depts] = await Promise.all([
-      apiRef.getAll(filterDept || undefined),
-      api.departments.getAll()
-    ]);
-    
-    // Map department name to person for display
-    const mapped = people.map(p => ({
-      ...p,
-      departmentName: depts.find(d => d.id === p.departmentId)?.name || 'Unknown'
-    }));
+    try {
+      // @ts-ignore - The getAll method is guaranteed to exist on both student and teacher APIs
+      const [people, depts] = await Promise.all([
+        apiRef.getAll(filterDept || undefined),
+        api.departments.getAll()
+      ]);
+      
+      // Map department name to person for display
+      const mapped = people.map(p => ({
+        ...p,
+        departmentName: depts.find(d => d.id === p.departmentId)?.name || 'Unknown'
+      }));
 
-    setData(mapped);
-    setDepartments(depts);
-    setLoading(false);
+      setData(mapped);
+      setDepartments(depts);
+    } catch (e) {
+      showToast(`Failed to load ${type} data.`, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, [filterDept, type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
     const payload: any = {
       firstName: formData.firstName,
       lastName: formData.lastName,
@@ -812,9 +870,11 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
 
     try {
       if (editingItem) {
+        // @ts-ignore - The update method is guaranteed to exist
         await apiRef.update(editingItem.id, payload);
         showToast('Updated successfully', 'success');
       } else {
+        // @ts-ignore - The create method is guaranteed to exist
         await apiRef.create(payload);
         showToast('Created successfully', 'success');
       }
@@ -822,6 +882,7 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
       loadData();
     } catch (error) {
       showToast('Operation failed', 'error');
+      setLoading(false);
     }
   };
 
@@ -844,23 +905,46 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
   };
 
   const handleDelete = async (item: any) => {
-    // Replaced confirm() with a custom modal logic (though here we use a simple window.confirm to avoid overly complex code in a single file)
-    if (window.confirm(`Are you sure you want to delete ${item.firstName}?`)) { 
-      await apiRef.delete(item.id);
-      showToast('Deleted successfully', 'success');
-      loadData();
+    // IMPORTANT: Custom modal should be used instead of window.confirm in real apps
+    // For this single-file example, we are leaving window.confirm as is.
+    if (window.confirm(`Are you sure you want to delete ${item.firstName} ${item.lastName}?`)) { 
+      setLoading(true);
+      try {
+        // @ts-ignore - The delete method is guaranteed to exist
+        await apiRef.delete(item.id);
+        showToast('Deleted successfully', 'success');
+        loadData();
+      } catch (e) {
+        showToast('Deletion failed', 'error');
+        setLoading(false);
+      }
     }
   };
 
-  const columns = [
+  // Base columns for both types
+  const baseColumns = [
     { key: 'firstName', label: 'First Name' },
     { key: 'lastName', label: 'Last Name' },
     { key: 'email', label: 'Email' },
     { key: 'departmentName', label: 'Department' },
-    type === 'student' 
-      ? { key: 'enrollmentDate', label: 'Enrolled' }
-      : { key: 'specialization', label: 'Specialization' }
   ];
+
+  let specificColumn = {};
+  if (type === 'student') {
+    specificColumn = { key: 'enrollmentDate', label: 'Enrolled' };
+  } else {
+    specificColumn = { key: 'specialization', label: 'Specialization' };
+  }
+
+  // Construct the final columns array
+  let columns = [...baseColumns, specificColumn];
+
+  // Prepend ID column based on type
+  if (type === 'student') {
+    columns = [{ key: 'id', label: 'Student ID' }, ...columns];
+  } else if (type === 'teacher') {
+    columns = [{ key: 'id', label: 'Teacher ID' }, ...columns];
+  }
 
   return (
     <div className="space-y-4">
@@ -875,15 +959,21 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
             <option value="">All Departments</option>
             {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </Select>
-          <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" /> Add {type === 'student' ? 'Student' : 'Teacher'}</Button>
+          <Button onClick={openCreate} disabled={loading}><Plus className="mr-2 h-4 w-4" /> Add {type === 'student' ? 'Student' : 'Teacher'}</Button>
         </div>
       </div>
 
-      {loading ? <div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div> : 
+      {loading ? (
+        <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
+      ) : (
         <DataTable data={data} columns={columns} onEdit={openEdit} onDelete={handleDelete} />
-      }
+      )}
 
-      <Dialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? `Edit ${type}` : `New ${type}`}>
+      <Dialog 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title={editingItem ? `Edit ${type}` : `New ${type}`}
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -916,13 +1006,17 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
             />
           </div>
           <div className="flex justify-end pt-4">
-            <Button type="submit">{editingItem ? 'Update' : 'Create'}</Button>
+            <Button type="submit" disabled={loading}>
+               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingItem ? 'Update' : 'Create'}
+            </Button>
           </div>
         </form>
       </Dialog>
     </div>
   );
 };
+
 
 /**
  * ==========================================
@@ -982,11 +1076,12 @@ const App = () => {
   // --- View Router ---
   const renderView = () => {
     switch (currentView) {
-      case 'dashboard': return <DashboardHome />;
+      // Pass setCurrentView function to DashboardHome
+      case 'dashboard': return <DashboardHome setView={setCurrentView} />;
       case 'departments': return <DepartmentView />;
       case 'students': return <PersonManager type="student" />;
       case 'teachers': return <PersonManager type="teacher" />;
-      default: return <DashboardHome />;
+      default: return <DashboardHome setView={setCurrentView} />;
     }
   };
 
