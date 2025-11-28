@@ -1,9 +1,8 @@
 /**
- * School Management Dashboard
+ * School Management Dashboard (Dark Theme)
  * A single-file React/TypeScript application using Tailwind CSS for a mock CRUD system.
- * This application uses in-memory mock data (mockDb) and implements basic authentication 
- * and entity management for Departments, Students, and Teachers.
- * * Update 3: Added ID/Name/Code search filtering to DepartmentView.
+ * Implements a full dark theme with black background and white/light text.
+ * * Update 4: Applied dark theme globally (black background, white text).
  */
 
 "use client";
@@ -217,21 +216,21 @@ const api = {
 
 /**
  * ==========================================
- * UI COMPONENTS (Replicating ShadCN)
+ * UI COMPONENTS (Replicating ShadCN - Dark Mode Adjusted)
  * ==========================================
  */
 
 const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link', size?: 'default' | 'sm' | 'icon' }>(
 	({ className = '', variant = 'default', size = 'default', ...props }, ref) => {
-		const baseStyles = "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+		const baseStyles = "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-slate-950 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 		
 		const variants = {
-			default: "bg-slate-900 text-slate-50 hover:bg-slate-900/90",
-			destructive: "bg-red-500 text-slate-50 hover:bg-red-500/90",
-			outline: "border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900",
-			secondary: "bg-slate-100 text-slate-900 hover:bg-slate-100/80",
-			ghost: "hover:bg-slate-100 hover:text-slate-900",
-			link: "text-slate-900 underline-offset-4 hover:underline",
+			default: "bg-indigo-600 text-white hover:bg-indigo-700/90",
+			destructive: "bg-red-600 text-white hover:bg-red-700/90",
+			outline: "border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800",
+			secondary: "bg-slate-800 text-slate-200 hover:bg-slate-700/80",
+			ghost: "hover:bg-slate-800 hover:text-white",
+			link: "text-indigo-400 underline-offset-4 hover:underline",
 		};
 
 		const sizes = {
@@ -256,7 +255,7 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
 		return (
 			<input
 				ref={ref}
-				className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+				className={`flex h-10 w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white ring-offset-slate-950 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors ${className}`}
 				{...props}
 			/>
 		);
@@ -268,7 +267,7 @@ const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLL
 	({ className = '', ...props }, ref) => (
 		<label
 			ref={ref}
-			className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
+			className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-200 ${className}`}
 			{...props}
 		/>
 	)
@@ -276,7 +275,7 @@ const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLL
 Label.displayName = "Label";
 
 const Card = ({ className = '', children }: { className?: string; children: React.ReactNode }) => (
-	<div className={`rounded-xl border border-slate-200 bg-white text-slate-950 shadow-sm ${className}`}>
+	<div className={`rounded-xl border border-slate-800 bg-slate-900 text-slate-200 shadow-xl ${className}`}>
 		{children}
 	</div>
 );
@@ -299,10 +298,11 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
 		<div className="relative">
 			<select
 				ref={ref}
-				className={`flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none ${className}`}
+				// Dark mode styles applied here
+				className={`flex h-10 w-full items-center justify-between rounded-md border border-slate-700 bg-slate-900 text-white px-3 py-2 text-sm ring-offset-slate-950 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none transition-colors ${className}`}
 				{...props}
 			/>
-			<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+			<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50 text-white">
 				<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
 			</div>
 		</div>
@@ -314,13 +314,13 @@ Select.displayName = "Select";
 const Dialog = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }) => {
 	if (!isOpen) return null;
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-			<div className="relative w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-lg animate-in zoom-in-95 duration-200">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+			<div className="relative w-full max-w-lg rounded-lg border border-slate-800 bg-slate-900 text-slate-200 p-6 shadow-2xl animate-in zoom-in-95 duration-200">
 				<div className="flex flex-col space-y-1.5 text-center sm:text-left mb-4">
-					<h2 className="text-lg font-semibold leading-none tracking-tight">{title}</h2>
+					<h2 className="text-lg font-semibold leading-none tracking-tight text-white">{title}</h2>
 				</div>
 				{children}
-				<button onClick={onClose} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2">
+				<button onClick={onClose} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-slate-950 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
 					<X className="h-4 w-4" />
 				</button>
 			</div>
@@ -340,13 +340,14 @@ const ToastProvider = ({ children }: { children: React.ReactNode }) => {
 	};
 
 	const Icon = toast?.type === 'success' ? CheckCircle2 : AlertCircle;
-	const color = toast?.type === 'success' ? 'bg-emerald-500' : 'bg-red-500';
+	// Adjusted colors for better visibility on dark background
+	const color = toast?.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'; 
 
 	return (
 		<ToastContext.Provider value={{ showToast }}>
 			{children}
 			{toast && (
-				<div className={`fixed bottom-4 right-4 z-50 flex items-center rounded-lg p-4 text-white shadow-lg animate-in slide-in-from-right-10 duration-300 ${color}`}>
+				<div className={`fixed bottom-4 right-4 z-50 flex items-center rounded-lg p-4 text-white shadow-xl animate-in slide-in-from-right-10 duration-300 ${color}`}>
 					<Icon className="h-5 w-5 mr-2" />
 					<span>{toast.message}</span>
 				</div>
@@ -449,11 +450,12 @@ const RegisterPage = () => {
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+		// Dark background for auth screen
+		<div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="space-y-1">
-					<CardTitle className="text-2xl text-center">Register</CardTitle>
-					<p className="text-center text-sm text-slate-500">Create a new account</p>
+					<CardTitle className="text-2xl text-center text-white">Register</CardTitle>
+					<p className="text-center text-sm text-slate-400">Create a new account</p>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit} className="space-y-4">
@@ -477,7 +479,7 @@ const RegisterPage = () => {
 							{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 							Sign Up
 						</Button>
-						<div className="text-center text-sm text-slate-500 mt-4">
+						<div className="text-center text-sm text-slate-400 mt-4">
 							Already have an account? <Button variant="link" type="button" onClick={() => setAuthPage('login')} className="p-0 h-auto">Sign In</Button>
 						</div>
 					</form>
@@ -504,11 +506,12 @@ const LoginPage = () => {
 	};
 
 	return (
-		<div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+		// Dark background for auth screen
+		<div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="space-y-1">
-					<CardTitle className="text-2xl text-center">School Management</CardTitle>
-					<p className="text-center text-sm text-slate-500">Enter your email and password to sign in</p>
+					<CardTitle className="text-2xl text-center text-white">School Management</CardTitle>
+					<p className="text-center text-sm text-slate-400">Enter your email and password to sign in</p>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit} className="space-y-4">
@@ -524,7 +527,7 @@ const LoginPage = () => {
 							{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
 							Sign In
 						</Button>
-						<div className="text-center text-sm text-slate-500 mt-4">
+						<div className="text-center text-sm text-slate-400 mt-4">
 							Don't have an account? <Button variant="link" type="button" onClick={() => setAuthPage('register')} className="p-0 h-auto">Sign Up</Button>
 						</div>
 						<div className="text-center text-xs text-slate-500 mt-4">
@@ -553,6 +556,7 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
 		{ id: 'teachers', label: 'Teachers', icon: Users },
 	];
 
+	// Sidebar styles already dark, just ensuring text and borders are cohesive
 	const baseClasses = "fixed inset-y-0 left-0 z-40 w-64 transform bg-slate-900 text-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0";
 	const mobileClasses = isMobileOpen ? "translate-x-0" : "-translate-x-full"; 
 
@@ -567,7 +571,9 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
 						key={item.id}
 						onClick={() => { setView(item.id); closeMobile(); }}
 						className={`w-full flex items-center px-6 py-3 text-sm font-medium transition-colors ${
-							currentView === item.id ? 'bg-slate-800 text-white border-r-4 border-indigo-500' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+							currentView === item.id 
+								? 'bg-slate-800 text-indigo-400 border-r-4 border-indigo-500' 
+								: 'text-slate-400 hover:bg-slate-800 hover:text-white'
 						}`}
 					>
 						<item.icon className="mr-3 h-5 w-5" />
@@ -577,7 +583,7 @@ const Sidebar = ({ currentView, setView, isMobileOpen, closeMobile }: { currentV
 			</div>
 			<div className="p-4 border-t border-slate-800">
 				<div className="flex items-center mb-4 px-2">
-					<div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold">
+					<div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">
 						{user?.name.charAt(0)}
 					</div>
 					<div className="ml-3">
@@ -610,42 +616,42 @@ const DashboardHome = ({ setView }: { setView: (view: string) => void }) => {
 	const StatCard = ({ title, value, icon: Icon, color }: any) => (
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-				<CardTitle className="text-sm font-medium">{title}</CardTitle>
+				<CardTitle className="text-sm font-medium text-slate-200">{title}</CardTitle>
 				<Icon className={`h-4 w-4 ${color}`} />
 			</CardHeader>
 			<CardContent>
-				<div className="text-2xl font-bold">{value}</div>
-				<p className="text-xs text-slate-500">Total registered in system</p>
+				<div className="text-2xl font-bold text-white">{value}</div>
+				<p className="text-xs text-slate-400">Total registered in system</p>
 			</CardContent>
 		</Card>
 	);
 
 	return (
 		<div className="space-y-6">
-			<h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+			<h2 className="text-3xl font-bold tracking-tight text-white">Dashboard</h2>
 			<div className="grid gap-4 md:grid-cols-3">
-				<StatCard title="Total Students" value={stats.students} icon={GraduationCap} color="text-indigo-500" />
-				<StatCard title="Total Teachers" value={stats.teachers} icon={Users} color="text-emerald-500" />
-				<StatCard title="Departments" value={stats.depts} icon={Building2} color="text-blue-500" />
+				<StatCard title="Total Students" value={stats.students} icon={GraduationCap} color="text-indigo-400" />
+				<StatCard title="Total Teachers" value={stats.teachers} icon={Users} color="text-emerald-400" />
+				<StatCard title="Departments" value={stats.depts} icon={Building2} color="text-blue-400" />
 			</div>
 			
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
 				<Card className="col-span-4">
 					<CardHeader>
-						<CardTitle>Recent Activity</CardTitle>
+						<CardTitle className="text-white">Recent Activity</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
 							{[1, 2, 3].map((_, i) => (
 								<div key={i} className="flex items-center">
-									<div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center">
-										<CheckCircle2 className="h-4 w-4 text-slate-500" />
+									<div className="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center">
+										<CheckCircle2 className="h-4 w-4 text-emerald-400" />
 									</div>
 									<div className="ml-4 space-y-1">
-										<p className="text-sm font-medium leading-none">Activity Update</p>
-										<p className="text-sm text-slate-500">Department was updated successfully.</p>
+										<p className="text-sm font-medium leading-none text-slate-100">Activity Update</p>
+										<p className="text-sm text-slate-400">Department was updated successfully.</p>
 									</div>
-									<div className="ml-auto font-medium text-sm text-slate-500">Just now</div>
+									<div className="ml-auto font-medium text-sm text-slate-400">Just now</div>
 								</div>
 							))}
 						</div>
@@ -653,7 +659,7 @@ const DashboardHome = ({ setView }: { setView: (view: string) => void }) => {
 				</Card>
 				<Card className="col-span-3">
 					<CardHeader>
-						<CardTitle>Quick Links</CardTitle>
+						<CardTitle className="text-white">Quick Links</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-2">
 						<Button variant="outline" className="w-full justify-start" onClick={() => setView('students')}>
@@ -691,21 +697,21 @@ const DataTable = ({
 }) => {
 	if (data.length === 0) {
 		return (
-			<div className="flex min-h-[200px] flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
-				<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-					<Search className="h-6 w-6 text-slate-400" />
+			<div className="flex min-h-[200px] flex-col items-center justify-center rounded-md border border-dashed border-slate-700 p-8 text-center animate-in fade-in-50">
+				<div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800">
+					<Search className="h-6 w-6 text-slate-500" />
 				</div>
-				<h3 className="mt-4 text-lg font-semibold">No data found</h3>
-				<p className="mb-4 mt-2 text-sm text-slate-500">Create a new record to get started or adjust your filters.</p>
+				<h3 className="mt-4 text-lg font-semibold text-white">No data found</h3>
+				<p className="mb-4 mt-2 text-sm text-slate-400">Create a new record to get started or adjust your filters.</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="rounded-md border bg-white overflow-hidden">
+		<div className="rounded-md border border-slate-800 bg-slate-900 overflow-hidden">
 			<div className="overflow-x-auto">
-				<table className="w-full text-sm text-left">
-					<thead className="bg-slate-50 text-slate-900 font-black border-b uppercase">
+				<table className="w-full text-sm text-left text-slate-200">
+					<thead className="bg-slate-800 text-white font-black border-b border-slate-700 uppercase">
 						<tr>
 							{columns.map(col => (
 								<th key={col.key} className="px-4 py-3">{col.label}</th>
@@ -713,9 +719,9 @@ const DataTable = ({
 							<th className="px-4 py-3 text-right">Actions</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-slate-100">
+					<tbody className="divide-y divide-slate-800">
 						{data.map((row, i) => (
-							<tr key={row.id || i} className="hover:bg-slate-50/50 transition-colors">
+							<tr key={row.id || i} className="hover:bg-slate-800/50 transition-colors">
 								{columns.map(col => (
 									<td key={`${row.id}-${col.key}`} className="px-4 py-3">
 										{col.key.includes('.') 
@@ -725,7 +731,7 @@ const DataTable = ({
 								))}
 								<td className="px-4 py-3 text-right space-x-2">
 									<Button variant="ghost" size="icon" onClick={() => onEdit(row)}>
-										<Pencil className="h-4 w-4 text-slate-500" />
+										<Pencil className="h-4 w-4 text-indigo-400" />
 									</Button>
 									<Button variant="ghost" size="icon" onClick={() => onDelete(row)}>
 										<Trash2 className="h-4 w-4 text-red-500" />
@@ -752,7 +758,6 @@ const DepartmentView = () => {
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [editingItem, setEditingItem] = useState<Department | null>(null);
 	
-	// NEW: Filter State for Department ID/Code/Name search
 	const [filterTerm, setFilterTerm] = useState(''); 
 
 	// Form State
@@ -773,7 +778,7 @@ const DepartmentView = () => {
 
 	useEffect(() => { loadData(); }, []);
 
-	// NEW: Memoized data for display, applying the ID/Code/Name filter
+	// Memoized data for display, applying the ID/Code/Name filter
 	const filteredData = useMemo(() => {
         if (!filterTerm.trim()) return data;
 
@@ -834,9 +839,9 @@ const DepartmentView = () => {
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="text-2xl font-bold tracking-tight">Departments</h2>
+				<h2 className="text-2xl font-bold tracking-tight text-white">Departments</h2>
 				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-					{/* NEW: ID/Code/Name Search Input */}
+					{/* ID/Code/Name Search Input */}
 					<div className="relative w-full sm:max-w-xs">
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
 						<Input 
@@ -853,7 +858,7 @@ const DepartmentView = () => {
 			</div>
 
 			{loading ? (
-				<div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
+				<div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-indigo-400" /></div>
 			) : (
 				<DataTable 
 					data={filteredData} // Use filtered data
@@ -1063,7 +1068,7 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
 	return (
 		<div className="space-y-4">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h2 className="text-2xl font-bold tracking-tight">{type === 'student' ? 'Students Management' : 'Teachers Management'}</h2>
+				<h2 className="text-2xl font-bold tracking-tight text-white">{type === 'student' ? 'Students Management' : 'Teachers Management'}</h2>
 				{/* Filter & Add Controls */}
 				<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
 					
@@ -1094,7 +1099,7 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
 			</div>
 
 			{loading ? (
-				<div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-slate-900" /></div>
+				<div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-indigo-400" /></div>
 			) : (
 				<DataTable 
 					data={tableData}
@@ -1191,11 +1196,12 @@ const MainApp = () => {
 	}
 
 	return (
-		<div className="flex min-h-screen bg-slate-50 font-sans">
+		// Global dark background and default text color
+		<div className="flex min-h-screen bg-slate-950 text-slate-200 font-sans">
 			{/* Mobile Overlay */}
 			{isMobileMenuOpen && (
 				<div 
-					className="fixed inset-0 z-30 bg-black/50 lg:hidden" 
+					className="fixed inset-0 z-30 bg-black/70 lg:hidden" 
 					onClick={() => setIsMobileMenuOpen(false)}
 				/>
 			)}
@@ -1209,18 +1215,18 @@ const MainApp = () => {
 
 			<div className="flex flex-col flex-1">
 				{/* Header/Navbar */}
-				<header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-4 lg:px-6 shadow-sm">
+				<header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-800 bg-slate-900 px-4 lg:px-6 shadow-xl">
 					<Button 
 						variant="ghost" 
 						size="icon" 
 						className="lg:hidden" 
 						onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 					>
-						{isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+						{isMobileMenuOpen ? <X className="h-6 w-6 text-white" /> : <Menu className="h-6 w-6 text-white" />}
 					</Button>
-					<h1 className="text-xl font-semibold tracking-tight capitalize">{currentView.replace(/s$/, '')}</h1>
+					<h1 className="text-xl font-semibold tracking-tight capitalize text-white">{currentView.replace(/s$/, '')}</h1>
 					<div className="ml-auto flex items-center space-x-4">
-						<span className="text-sm font-medium text-slate-700 hidden sm:block">Welcome, {user.name} ({user.role})</span>
+						<span className="text-sm font-medium text-slate-400 hidden sm:block">Welcome, {user.name} ({user.role})</span>
 					</div>
 				</header>
 
