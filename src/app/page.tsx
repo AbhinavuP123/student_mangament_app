@@ -921,30 +921,28 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
     }
   };
 
-  // Base columns for both types
-  const baseColumns = [
-    { key: 'firstName', label: 'First Name' },
-    { key: 'lastName', label: 'Last Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'departmentName', label: 'Department' },
-  ];
+  // --- FIX: Ensure columns array is correctly typed using useMemo ---
+  const columns = useMemo(() => {
+    // Define the base columns with explicit type
+    const baseCols: { key: string, label: string }[] = [
+      { key: 'firstName', label: 'First Name' },
+      { key: 'lastName', label: 'Last Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'departmentName', label: 'Department' },
+    ];
 
-  let specificColumn = {};
-  if (type === 'student') {
-    specificColumn = { key: 'enrollmentDate', label: 'Enrolled' };
-  } else {
-    specificColumn = { key: 'specialization', label: 'Specialization' };
-  }
+    // Define the specific column based on type
+    const specificCol: { key: string, label: string } = type === 'student'
+      ? { key: 'enrollmentDate', label: 'Enrolled' }
+      : { key: 'specialization', label: 'Specialization' };
+      
+    // Define the ID column
+    const idColumn: { key: string, label: string } = { key: 'id', label: type === 'student' ? 'Student ID' : 'Teacher ID' };
 
-  // Construct the final columns array
-  let columns = [...baseColumns, specificColumn];
-
-  // Prepend ID column based on type
-  if (type === 'student') {
-    columns = [{ key: 'id', label: 'Student ID' }, ...columns];
-  } else if (type === 'teacher') {
-    columns = [{ key: 'id', label: 'Teacher ID' }, ...columns];
-  }
+    // Combine all columns in the desired order
+    return [idColumn, ...baseCols, specificCol];
+  }, [type]);
+  // -----------------------------------------------------------------
 
   return (
     <div className="space-y-4">
