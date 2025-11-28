@@ -5,15 +5,15 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  // --- ADDED: Explicitly load required weights ---
-  weight: ['400', '500', '700'], 
-  // 400: Regular, 500: Medium, 700: Bold
+  // --- UPDATED: Explicitly load required weights, including '900' for maximum boldness ---
+  weight: ['400', '500', '700', '900'], 
+  // 400: Regular, 500: Medium, 700: Bold, 900: ExtraBold/Black
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  // --- ADDED: Explicitly load required weights ---
+  // --- Explicitly load required weights ---
   weight: ['400', '700'],
 });
 
