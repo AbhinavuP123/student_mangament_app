@@ -5,11 +5,16 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  // --- ADDED: Explicitly load required weights ---
+  weight: ['400', '500', '700'], 
+  // 400: Regular, 500: Medium, 700: Bold
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  // --- ADDED: Explicitly load required weights ---
+  weight: ['400', '700'],
 });
 
 export const metadata: Metadata = {
