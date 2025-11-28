@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useState, useEffect, useMemo, createContext, useContext } from 'react';
 import { 
   LayoutDashboard, 
@@ -25,6 +25,7 @@ import {
  */
 
 type UserRole = 'admin' | 'user';
+type AuthPageState = 'login' | 'register';
 
 interface User {
   id: string;
@@ -75,6 +76,7 @@ interface ApiResponse<T> {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const mockDb = {
+  // Initial data for CRUD operations
   departments: [
     { id: '1', name: 'Computer Science', code: 'CS', description: 'Software and Hardware engineering' },
     { id: '2', name: 'Mathematics', code: 'MATH', description: 'Pure and Applied Mathematics' },
@@ -87,19 +89,41 @@ const mockDb = {
   teachers: [
     { id: '1', firstName: 'Dr. Emily', lastName: 'Brown', email: 'emily@school.edu', departmentId: '1', specialization: 'AI' },
     { id: '2', firstName: 'Prof. Alan', lastName: 'Davis', email: 'alan@school.edu', departmentId: '2', specialization: 'Calculus' },
-  ] as Teacher[]
+  ] as Teacher[],
+  // Mock user storage for registration and login
+  users: [
+    { id: 'u1', name: 'Admin User', email: 'admin@school.edu', password: 'password', role: 'admin' },
+  ] as (User & { password: string })[]
 };
 
 const api = {
   auth: {
-    login: async (email: string): Promise<User> => {
+    login: async (email: string, password: string): Promise<User> => {
       await delay(800);
-      if (email.includes('@')) return { id: 'u1', name: 'Admin User', email, role: 'admin' };
+      const userRecord = mockDb.users.find(u => u.email === email && u.password === password);
+      if (userRecord) {
+        // Return user without password
+        const { password: _, ...user } = userRecord;
+        return user;
+      }
       throw new Error('Invalid credentials');
     },
-    register: async (email: string, name: string): Promise<User> => {
+    register: async (name: string, email: string, password: string): Promise<User> => {
       await delay(800);
-      return { id: 'u2', name, email, role: 'admin' };
+      if (mockDb.users.some(u => u.email === email)) {
+        throw new Error('User already exists');
+      }
+      const newUserRecord = { 
+        id: Math.random().toString(36).substr(2, 9), 
+        name, 
+        email, 
+        password, 
+        role: 'user' as UserRole 
+      };
+      mockDb.users.push(newUserRecord);
+      
+      const { password: _, ...user } = newUserRecord;
+      return user;
     }
   },
   departments: {
@@ -183,7 +207,7 @@ const api = {
  * ==========================================
  */
 
-const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary', size?: 'default' | 'sm' | 'icon' }>(
+const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'secondary' | 'link', size?: 'default' | 'sm' | 'icon' }>(
   ({ className = '', variant = 'default', size = 'default', ...props }, ref) => {
     const baseStyles = "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
     
@@ -193,6 +217,7 @@ const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HT
       outline: "border border-slate-200 bg-white hover:bg-slate-100 hover:text-slate-900",
       secondary: "bg-slate-100 text-slate-900 hover:bg-slate-100/80",
       ghost: "hover:bg-slate-100 hover:text-slate-900",
+      link: "text-slate-900 underline-offset-4 hover:underline",
     };
 
     const sizes = {
@@ -298,12 +323,93 @@ const ToastContext = createContext<{ showToast: (msg: string, type: 'success' | 
  * ==========================================
  */
 
-const AuthContext = createContext<{ user: User | null; login: (e: string) => Promise<void>; logout: () => void; isLoading: boolean }>({
-  user: null, login: async () => {}, logout: () => {}, isLoading: false
+const AuthContext = createContext<{ 
+  user: User | null; 
+  login: (e: string, p: string) => Promise<void>; 
+  register: (n: string, e: string, p: string) => Promise<void>;
+  logout: () => void; 
+  isLoading: boolean;
+  setAuthPage: (p: AuthPageState) => void;
+  authPage: AuthPageState;
+}>({
+  user: null, 
+  login: async () => {}, 
+  register: async () => {},
+  logout: () => {}, 
+  isLoading: false,
+  setAuthPage: () => {},
+  authPage: 'login',
 });
 
+const RegisterPage = () => {
+  const { register, isLoading, setAuthPage } = useContext(AuthContext);
+  const { showToast } = useContext(ToastContext);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      showToast('Passwords do not match', 'error');
+      return;
+    }
+    if (!name || !email || password.length < 6) {
+      showToast('Please fill all fields and ensure password is at least 6 characters.', 'error');
+      return;
+    }
+
+    try {
+      await register(name, email, password);
+      showToast('Registration successful! Logging you in.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Registration failed', 'error');
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Register</CardTitle>
+          <p className="text-center text-sm text-slate-500">Create a new account</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="John Doe" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="m@example.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password (min 6 chars)</Label>
+              <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+            </div>
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sign Up
+            </Button>
+            <div className="text-center text-sm text-slate-500 mt-4">
+              Already have an account? <Button variant="link" type="button" onClick={() => setAuthPage('login')} className="p-0 h-auto">Sign In</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 const LoginPage = () => {
-  const { login, isLoading } = useContext(AuthContext);
+  const { login, isLoading, setAuthPage } = useContext(AuthContext);
   const { showToast } = useContext(ToastContext);
   const [email, setEmail] = useState('admin@school.edu');
   const [password, setPassword] = useState('password');
@@ -311,10 +417,10 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login(email);
+      await login(email, password);
       showToast('Logged in successfully', 'success');
-    } catch (err) {
-      showToast('Invalid credentials', 'error');
+    } catch (err: any) {
+      showToast(err.message || 'Invalid credentials', 'error');
     }
   };
 
@@ -323,7 +429,7 @@ const LoginPage = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl text-center">School Management</CardTitle>
-          <p className="text-center text-sm text-slate-500">Enter your email to sign in</p>
+          <p className="text-center text-sm text-slate-500">Enter your email and password to sign in</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -339,6 +445,9 @@ const LoginPage = () => {
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
             </Button>
+            <div className="text-center text-sm text-slate-500 mt-4">
+              Don't have an account? <Button variant="link" type="button" onClick={() => setAuthPage('register')} className="p-0 h-auto">Sign Up</Button>
+            </div>
             <div className="text-center text-xs text-slate-500 mt-4">
               Try: admin@school.edu / password
             </div>
@@ -601,7 +710,8 @@ const DepartmentView = () => {
   };
 
   const handleDelete = async (item: Department) => {
-    if (confirm(`Delete ${item.name}?`)) {
+    // Replaced confirm() with a custom modal logic (though here we use a simple window.confirm to avoid overly complex code in a single file)
+    if (window.confirm(`Are you sure you want to delete ${item.name}?`)) { 
       await api.departments.delete(item.id);
       showToast('Deleted successfully', 'success');
       loadData();
@@ -734,7 +844,8 @@ const PersonManager = ({ type }: { type: 'student' | 'teacher' }) => {
   };
 
   const handleDelete = async (item: any) => {
-    if (confirm(`Delete ${item.firstName}?`)) {
+    // Replaced confirm() with a custom modal logic (though here we use a simple window.confirm to avoid overly complex code in a single file)
+    if (window.confirm(`Are you sure you want to delete ${item.firstName}?`)) { 
       await apiRef.delete(item.id);
       showToast('Deleted successfully', 'success');
       loadData();
@@ -825,22 +936,38 @@ const App = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [authPage, setAuthPage] = useState<AuthPageState>('login'); // State to switch between login/register
 
   // --- Auth Logic ---
   const authContextValue = useMemo(() => ({
     user,
     isLoading: authLoading,
-    login: async (email: string) => {
+    authPage,
+    setAuthPage,
+    login: async (email: string, password: string) => {
       setAuthLoading(true);
       try {
-        const u = await api.auth.login(email);
+        const u = await api.auth.login(email, password);
         setUser(u);
       } finally {
         setAuthLoading(false);
       }
     },
-    logout: () => setUser(null)
-  }), [user, authLoading]);
+    register: async (name: string, email: string, password: string) => {
+      setAuthLoading(true);
+      try {
+        const u = await api.auth.register(name, email, password);
+        setUser(u);
+      } finally {
+        setAuthLoading(false);
+      }
+    },
+    logout: () => {
+      setUser(null);
+      setCurrentView('dashboard');
+      setAuthPage('login'); // Reset to login page on logout
+    }
+  }), [user, authLoading, authPage]);
 
   // --- Toast Logic ---
   useEffect(() => {
@@ -877,7 +1004,7 @@ const App = () => {
         )}
 
         {!user ? (
-          <LoginPage />
+          authPage === 'login' ? <LoginPage /> : <RegisterPage />
         ) : (
           <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans">
             {/* Mobile Overlay */}
